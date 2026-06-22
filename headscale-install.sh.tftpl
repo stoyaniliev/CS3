@@ -1,0 +1,9 @@
+#!/bin/bash
+set -eux
+export DEBIAN_FRONTEND=noninteractive
+cd /tmp
+curl -fsSL -o headscale.deb "https://github.com/juanfont/headscale/releases/download/v${headscale_version}/headscale_${headscale_version}_linux_amd64.deb"
+apt-get update -y
+apt-get install -y ./headscale.deb
+systemctl enable headscale
+# server_url is set to the public Elastic IP in the runbook, then we restart.

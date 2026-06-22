@@ -1,0 +1,4 @@
+#!/bin/bash
+set -eux
+# Install k3s (lightweight Kubernetes). --tls-san lets you use the kubeconfig remotely.
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644 --tls-san ${tls_san}" sh -

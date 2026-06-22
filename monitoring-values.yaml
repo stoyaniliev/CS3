@@ -1,0 +1,43 @@
+# Lightweight kube-prometheus-stack values for a single small k3s node (t3.medium).
+# Trims resource use so Prometheus + Grafana fit alongside your portal.
+
+# Alertmanager off for now (saves memory); re-enable later for full alerting.
+alertmanager:
+  enabled: false
+
+grafana:
+  adminPassword: "innohard-grafana"   # change if you like; this is your Grafana login
+  service:
+    type: ClusterIP
+  # default Kubernetes dashboards are bundled - nothing to build by hand
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+prometheus:
+  prometheusSpec:
+    retention: 2d            # short history keeps disk/memory low
+    walCompression: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 300Mi
+      limits:
+        memory: 900Mi
+
+# These two provide the data the dashboards visualise - keep them on.
+nodeExporter:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+
+# k3s already runs these as embedded components, so skip scraping them to avoid noise/errors.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false

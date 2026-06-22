@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Innovatech — Employee Self-Service Portal</title>
+<style>
+  :root {
+    --bg:#0f172a; --panel:#fff; --ink:#0f172a; --muted:#64748b;
+    --brand:#2563eb; --brand-dark:#1d4ed8; --line:#e2e8f0;
+    --ok-bg:#dcfce7; --ok-ink:#166534; --off-bg:#f1f5f9; --off-ink:#64748b; --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#f8fafc;}
+  header{background:var(--bg);color:#fff;padding:20px 28px;}
+  header h1{margin:0;font-size:20px;}
+  header p{margin:4px 0 0;color:#94a3b8;font-size:13px;}
+  .wrap{max-width:980px;margin:24px auto;padding:0 16px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:20px;}
+  .card h2{margin:0 0 14px;font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+  form.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end;}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;}
+  button{cursor:pointer;border:none;border-radius:8px;font-size:14px;font-weight:600;padding:9px 14px;}
+  .primary{background:var(--brand);color:#fff;}
+  .primary:hover{background:var(--brand-dark);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+  .badge{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+  .badge.active{background:var(--ok-bg);color:var(--ok-ink);}
+  .badge.offboarded{background:var(--off-bg);color:var(--off-ink);}
+  .act{background:#f1f5f9;color:#0f172a;margin-right:6px;padding:6px 10px;font-size:13px;}
+  .act.danger{color:var(--danger);}
+  .act:hover{background:#e2e8f0;}
+  #msg{font-size:13px;padding:10px 12px;border-radius:8px;display:none;margin-bottom:14px;}
+  #msg.show{display:block;}
+  #msg.err{background:#fef2f2;color:#991b1b;}
+  #msg.ok{background:var(--ok-bg);color:var(--ok-ink);}
+  .muted{color:var(--muted);font-size:13px;}
+  @media (max-width:720px){form.grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Innovatech — Employee Self-Service Portal</h1>
+  <p>Onboard, view, and offboard employees · running on Kubernetes (k3s), private via Headscale mesh</p>
+</header>
+<div class="wrap">
+  <div id="msg"></div>
+  <div class="card">
+    <h2>Onboard a new employee</h2>
+    <form class="grid" id="onboardForm">
+      <div><label>Name</label><input name="name" required placeholder="Grace Hopper" /></div>
+      <div><label>Email</label><input name="email" type="email" required placeholder="grace@innovatech.example" /></div>
+      <div><label>Department</label><input name="department" required placeholder="Engineering" /></div>
+      <div><label>Role</label><input name="role" required placeholder="Developer" /></div>
+      <div style="grid-column:1 / -1;"><button class="primary" type="submit">Onboard employee</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Employees</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <p class="muted">Portal &rarr; API Gateway &rarr; Lambda &rarr; DynamoDB. Data is managed outside the cluster.</p>
+</div>
+<script>
+  const API_BASE = "https://w0l2v0yrug.execute-api.eu-central-1.amazonaws.com";
+
+  const rows = document.getElementById("rows");
+  const msg = document.getElementById("msg");
+  function flash(t,k){msg.textContent=t;msg.className="show "+k;setTimeout(()=>msg.className="",3500);}
+  function badge(s){const x=(s||"").toLowerCase();return `<span class="badge ${x==="active"?"active":"offboarded"}">${s||"—"}</span>`;}
+
+  async function load(){
+    try{
+      const res=await fetch(`${API_BASE}/employees`);
+      const data=await res.json();
+      if(!Array.isArray(data)||data.length===0){rows.innerHTML=`<tr><td colspan="6" class="muted">No employees yet.</td></tr>`;return;}
+      rows.innerHTML=data.map(e=>`
+        <tr>
+          <td>${e.name||""}</td><td>${e.email||""}</td><td>${e.department||""}</td><td>${e.role||""}</td>
+          <td>${badge(e.status)}</td>
+          <td>
+            <button class="act" onclick="offboard('${e.id}')">Offboard</button>
+            <button class="act danger" onclick="remove('${e.id}')">Delete</button>
+          </td>
+        </tr>`).join("");
+    }catch(err){rows.innerHTML=`<tr><td colspan="6" class="muted">Could not reach the API. Check API_BASE and CORS.</td></tr>`;}
+  }
+
+  document.getElementById("onboardForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();const f=ev.target;
+    const body={name:f.name.value,email:f.email.value,department:f.department.value,role:f.role.value};
+    try{
+      const res=await fetch(`${API_BASE}/employees`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!res.ok)throw new Error();
+      f.reset();flash("Employee onboarded.","ok");load();
+    }catch{flash("Onboarding failed.","err");}
+  });
+
+  async function offboard(id){
+    try{
+      const res=await fetch(`${API_BASE}/employees/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"offboarded"})});
+      if(!res.ok)throw new Error();flash("Employee offboarded.","ok");load();
+    }catch{flash("Offboarding failed.","err");}
+  }
+  async function remove(id){
+    try{
+      const res=await fetch(`${API_BASE}/employees/${id}`,{method:"DELETE"});
+      if(!res.ok)throw new Error();flash("Employee deleted.","ok");load();
+    }catch{flash("Delete failed.","err");}
+  }
+  load();
+</script>
+</body>
+</html>

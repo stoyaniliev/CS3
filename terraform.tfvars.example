@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+region  = "eu-central-1"
+project = "innovatech"
+
+# Strongly recommended: set your own IP so SSH and the k8s API aren't open to the world.
+# Find it at https://checkip.amazonaws.com  then add /32
+my_ip_cidr = "0.0.0.0/0"
+
+# Password for the in-cluster Postgres (also set it in k8s/postgres.yaml's Secret).
+db_password = "CHANGE-ME-strong-password"
