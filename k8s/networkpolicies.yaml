@@ -1,0 +1,69 @@
+# Micro-segmentation for the portal namespace (REQ-NCA-P3-07).
+# k3s enforces NetworkPolicies via its built-in controller, so these take effect.
+#
+# Strategy: default-deny everything in the `portal` namespace, then allow only:
+#   - ingress to the portal pod from the Traefik ingress controller on port 80
+#   - egress to cluster DNS (so name resolution still works)
+# Everything else (pod-to-pod, other namespaces, the internet) is blocked.
+
+---
+# 1) Default deny ALL ingress and egress in the portal namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: portal
+spec:
+  podSelector: {}            # applies to every pod in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# 2) Allow the portal pod to reach cluster DNS (kube-dns / CoreDNS) on 53
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: portal
+spec:
+  podSelector:
+    matchLabels:
+      app: portal
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# 3) Allow ingress to the portal pod ONLY from the Traefik ingress controller, on port 80
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-portal
+  namespace: portal
+spec:
+  podSelector:
+    matchLabels:
+      app: portal
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 80

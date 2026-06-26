@@ -65,10 +65,10 @@
       <tbody id="rows"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
     </table>
   </div>
-  <p class="muted">Portal &rarr; API Gateway &rarr; Lambda &rarr; DynamoDB. Data is managed outside the cluster.</p>
+  <p class="muted">Browser &rarr; portal (mesh) &rarr; API Gateway &rarr; Lambda &rarr; DynamoDB. Data is managed outside the cluster.</p>
 </div>
 <script>
-  const API_BASE = "https://w0l2v0yrug.execute-api.eu-central-1.amazonaws.com";
+  const API_BASE = "/api";
 
   const rows = document.getElementById("rows");
   const msg = document.getElementById("msg");
@@ -89,7 +89,7 @@
             <button class="act danger" onclick="remove('${e.id}')">Delete</button>
           </td>
         </tr>`).join("");
-    }catch(err){rows.innerHTML=`<tr><td colspan="6" class="muted">Could not reach the API. Check API_BASE and CORS.</td></tr>`;}
+    }catch(err){rows.innerHTML=`<tr><td colspan="6" class="muted">Could not reach the API.</td></tr>`;}
   }
 
   document.getElementById("onboardForm").addEventListener("submit",async ev=>{

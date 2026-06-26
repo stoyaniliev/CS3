@@ -21,10 +21,16 @@ spec:
           volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
       volumes:
         - name: html
           configMap:
             name: portal-html
+        - name: nginx-conf
+          configMap:
+            name: portal-nginx
 ---
 apiVersion: v1
 kind: Service

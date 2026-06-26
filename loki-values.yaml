@@ -1,0 +1,38 @@
+# Lightweight Loki + Promtail for log aggregation on a single small k3s node.
+
+# Tuned to be gentle on a t3.medium that is already ~69% memory:
+#   - Loki single-binary, filesystem storage, no persistent volume (ephemeral)
+#   - short-lived logs, small resource limits
+
+loki:
+  enabled: true
+  isDefault: false
+  persistence:
+    enabled: false          # ephemeral storage; fine for a demo, keeps it light
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 384Mi
+
+promtail:
+  enabled: true             # ships pod logs into Loki
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 192Mi
+
+
+grafana:
+  enabled: false
+prometheus:
+  enabled: false
+fluent-bit:
+  enabled: false
+filebeat:
+  enabled: false
+logstash:
+  enabled: false

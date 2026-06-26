@@ -1,6 +1,10 @@
 """Innovatech employee API (Lambda, DynamoDB-backed).
 
-Routes (via API Gateway HTTP API):
+Works behind BOTH:
+  - API Gateway HTTP API (v2)  -> event["requestContext"]["http"]["method"]
+  - API Gateway REST API (v1)  -> event["httpMethod"], greedy {proxy+} resource
+
+Routes:
   GET    /employees          -> list all
   GET    /employees/{id}     -> get one
   POST   /employees          -> onboard (create); id auto-generated if omitted
@@ -23,9 +27,33 @@ def _resp(code, body):
     }
 
 
+def _method(event):
+    # REST API (v1) gives httpMethod; HTTP API (v2) nests it under requestContext.http
+    return (
+        event.get("httpMethod")
+        or event.get("requestContext", {}).get("http", {}).get("method", "")
+    )
+
+
+def _emp_id(event):
+    params = event.get("pathParameters") or {}
+    # HTTP API route /employees/{id} -> "id"
+    if params.get("id"):
+        return params["id"]
+    # REST API greedy {proxy+} -> "proxy" holds the path after the stage,
+    # e.g. "employees/123" or just "employees"
+    proxy = params.get("proxy")
+    if proxy:
+        parts = [p for p in proxy.split("/") if p]
+        # last segment is the id only when it's deeper than /employees
+        if len(parts) >= 2:
+            return parts[-1]
+    return None
+
+
 def lambda_handler(event, context):
-    method = event.get("requestContext", {}).get("http", {}).get("method", "")
-    emp_id = (event.get("pathParameters") or {}).get("id")
+    method = _method(event)
+    emp_id = _emp_id(event)
     try:
         data = json.loads(event.get("body") or "{}")
     except (ValueError, TypeError):
