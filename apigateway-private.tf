@@ -53,22 +53,22 @@ resource "aws_api_gateway_rest_api" "private" {
 # Resource policy: allow invoke ONLY through our VPC endpoint
 data "aws_iam_policy_document" "private_api_policy" {
   statement {
-    effect     = "Allow"
+    effect = "Allow"
     principals {
       type        = "AWS"
       identifiers = ["*"]
     }
-    actions    = ["execute-api:Invoke"]
-    resources  = ["execute-api:/*"]
+    actions   = ["execute-api:Invoke"]
+    resources = ["execute-api:/*"]
   }
   statement {
-    effect     = "Deny"
+    effect = "Deny"
     principals {
       type        = "AWS"
       identifiers = ["*"]
     }
-    actions    = ["execute-api:Invoke"]
-    resources  = ["execute-api:/*"]
+    actions   = ["execute-api:Invoke"]
+    resources = ["execute-api:/*"]
     condition {
       test     = "StringNotEquals"
       variable = "aws:SourceVpce"
